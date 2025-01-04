@@ -444,7 +444,7 @@ services:
   # API service
   api:
     image: langgenius/dify-api:0.14.2
-    restart: always
+    restart: unless-stopped
     environment:
       # Use the shared environment variables.
       <<: *shared-api-worker-env
@@ -467,7 +467,7 @@ services:
   # The Celery worker for processing the queue.
   worker:
     image: langgenius/dify-api:0.14.2
-    restart: always
+    restart: unless-stopped
     environment:
       # Use the shared environment variables.
       <<: *shared-api-worker-env
@@ -489,7 +489,7 @@ services:
   # Frontend web application.
   web:
     image: langgenius/dify-web:0.14.2
-    restart: always
+    restart: unless-stopped
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
       APP_API_URL: ${APP_API_URL:-}
@@ -501,7 +501,7 @@ services:
   # The postgres database.
   db:
     image: postgres:15-alpine
-    restart: always
+    restart: unless-stopped
     environment:
       PGUSER: ${PGUSER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-difyai123456}
@@ -526,7 +526,7 @@ services:
   # The redis cache.
   redis:
     image: redis:6-alpine
-    restart: always
+    restart: unless-stopped
     environment:
       REDISCLI_AUTH: ${REDIS_PASSWORD:-difyai123456}
     volumes:
@@ -542,7 +542,7 @@ services:
   # The DifySandbox
   sandbox:
     image: langgenius/dify-sandbox:0.2.10
-    restart: always
+    restart: unless-stopped
     environment:
       # The DifySandbox configurations
       # Make sure you are changing this key for your deployment with a strong key.
@@ -566,7 +566,7 @@ services:
   # https://docs.dify.ai/learn-more/faq/install-faq#id-18.-why-is-ssrf_proxy-needed
   ssrf_proxy:
     image: ubuntu/squid:latest
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./ssrf_proxy/squid.conf.template:/etc/squid/squid.conf.template
       - ./ssrf_proxy/docker-entrypoint.sh:/docker-entrypoint-mount.sh
@@ -591,7 +591,7 @@ services:
   # used for reverse proxying the API service and Web service.
   nginx:
     image: nginx:latest
-    restart: always
+    restart: unless-stopped
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template
       - ./nginx/proxy.conf.template:/etc/nginx/proxy.conf.template
@@ -633,7 +633,7 @@ services:
     profiles:
       - ''
       - weaviate
-    restart: always
+    restart: unless-stopped
     volumes:
       # Mount the Weaviate data directory to the con tainer.
       - dify_weaviate:/var/lib/weaviate
@@ -659,7 +659,7 @@ services:
     image: langgenius/qdrant:v1.7.3
     profiles:
       - qdrant
-    restart: always
+    restart: unless-stopped
     volumes:
       - dify_qdrant:/qdrant/storage
     environment:
