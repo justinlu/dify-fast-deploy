@@ -6,7 +6,7 @@ Welcome to the lite version for Dify compose deployment
 
 - Split the Dify data storage path to the .env file for unified configuration.
 - Add network proxy settings.
-- Removed vector database support: QDrant, Milvus, MyScale, CouchBase, PGVector/PGVector-RS, TiDB, Chroma, Oracle, Relyt, OpenSearch, ElasticSearch, OceanBase.
+- Removed vector database support: QDrant, Milvus, MyScale, CouchBase, PGVector/PGVector-RS, TiDB, Chroma, Oracle, Relyt, OpenSearch, ElasticSearch, OceanBase, Opengauss.
 - Removed middleware support.
 - Adjust API Worker from 1 to 3.
 - Adjust default ETL type to Unstructured.
