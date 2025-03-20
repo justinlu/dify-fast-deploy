@@ -105,7 +105,7 @@ x-shared-env: &shared-api-worker-env
   TENCENT_COS_SECRET_ID: ${TENCENT_COS_SECRET_ID:-your-secret-id}
   TENCENT_COS_REGION: ${TENCENT_COS_REGION:-your-region}
   TENCENT_COS_SCHEME: ${TENCENT_COS_SCHEME:-your-scheme}
-  OCI_ENDPOINT: ${OCI_ENDPOINT:-https://objectstorage.us-ashburn-1.oraclecloud.com}
+  OCI_ENDPOINT: ${OCI_ENDPOINT:-https://your-object-storage-namespace.compat.objectstorage.us-ashburn-1.oraclecloud.com}
   OCI_BUCKET_NAME: ${OCI_BUCKET_NAME:-your-bucket-name}
   OCI_ACCESS_KEY: ${OCI_ACCESS_KEY:-your-access-key}
   OCI_SECRET_KEY: ${OCI_SECRET_KEY:-your-secret-key}
@@ -197,11 +197,13 @@ x-shared-env: &shared-api-worker-env
   CHROMA_DATABASE: ${CHROMA_DATABASE:-default_database}
   CHROMA_AUTH_PROVIDER: ${CHROMA_AUTH_PROVIDER:-chromadb.auth.token_authn.TokenAuthClientProvider}
   CHROMA_AUTH_CREDENTIALS: ${CHROMA_AUTH_CREDENTIALS:-}
-  ORACLE_HOST: ${ORACLE_HOST:-oracle}
-  ORACLE_PORT: ${ORACLE_PORT:-1521}
   ORACLE_USER: ${ORACLE_USER:-dify}
   ORACLE_PASSWORD: ${ORACLE_PASSWORD:-dify}
-  ORACLE_DATABASE: ${ORACLE_DATABASE:-FREEPDB1}
+  ORACLE_DSN: ${ORACLE_DSN:-oracle:1521/FREEPDB1}
+  ORACLE_CONFIG_DIR: ${ORACLE_CONFIG_DIR:-/app/api/storage/wallet}
+  ORACLE_WALLET_LOCATION: ${ORACLE_WALLET_LOCATION:-/app/api/storage/wallet}
+  ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD:-dify}
+  ORACLE_IS_AUTONOMOUS: ${ORACLE_IS_AUTONOMOUS:-false}
   RELYT_HOST: ${RELYT_HOST:-db}
   RELYT_PORT: ${RELYT_PORT:-5432}
   RELYT_USER: ${RELYT_USER:-postgres}
@@ -308,6 +310,7 @@ x-shared-env: &shared-api-worker-env
   HTTP_REQUEST_NODE_MAX_TEXT_SIZE: ${HTTP_REQUEST_NODE_MAX_TEXT_SIZE:-1048576}
   SSRF_PROXY_HTTP_URL: ${SSRF_PROXY_HTTP_URL:-http://ssrf_proxy:3128}
   SSRF_PROXY_HTTPS_URL: ${SSRF_PROXY_HTTPS_URL:-http://ssrf_proxy:3128}
+  LOOP_NODE_MAX_COUNT: ${LOOP_NODE_MAX_COUNT:-100}
   TEXT_GENERATION_TIMEOUT_MS: ${TEXT_GENERATION_TIMEOUT_MS:-60000}
   PGUSER: ${PGUSER:-${DB_USERNAME}}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD}}
@@ -410,82 +413,15 @@ x-shared-env: &shared-api-worker-env
   MARKETPLACE_ENABLED: ${MARKETPLACE_ENABLED:-true}
   MARKETPLACE_API_URL: ${MARKETPLACE_API_URL:-https://marketplace.dify.ai}
   FORCE_VERIFYING_SIGNATURE: ${FORCE_VERIFYING_SIGNATURE:-true}
-
-#? Storage Configuration
-volumes:
-  #? Basic data storage
-  #* Dify app data
-  dify_app:
-    name: dify_app
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/app/storage"
-  #* PostgreSQL database data
-  dify_db:
-    name: dify_db
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/db/data"
-  #* Redis cache data
-  dify_redis:
-    name: dify_redis
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/redis/data"
-  #* Sandbox dependencies cache
-  dify_sandbox_deps:
-    name: dify_sandbox_deps
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/sandbox/dependencies"
-  #* Sandbox dependencies configuration
-  dify_sandbox_conf:
-    name: dify_sandbox_conf
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/sandbox/conf"
-  #* Plugin Storage
-  dify_plugin:
-    name: dify_plugin
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/plugin_daemon"
-  
-  #? Vector database
-  #* Weavite vector db
-  dify_weaviate:
-    name: dify_weaviate
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/weaviate"
-  #* Qdrant vector db
-  dify_qdrant:
-    name: dify_qdrant
-    driver: local
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "./volumes/qdrant"
+  PLUGIN_PYTHON_ENV_INIT_TIMEOUT: ${PLUGIN_PYTHON_ENV_INIT_TIMEOUT:-120}
+  PLUGIN_MAX_EXECUTION_TIMEOUT: ${PLUGIN_MAX_EXECUTION_TIMEOUT:-600}
+  PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
 
 services:
   # API service
   api:
-    image: langgenius/dify-api:1.0.0
-    restart: unless-stopped
+    image: langgenius/dify-api:1.0.1
+    restart: always
     environment:
       # Use the shared environment variables.
       <<: *shared-api-worker-env
@@ -494,14 +430,21 @@ services:
       SENTRY_DSN: ${API_SENTRY_DSN:-}
       SENTRY_TRACES_SAMPLE_RATE: ${API_SENTRY_TRACES_SAMPLE_RATE:-1.0}
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
+      PLUGIN_REMOTE_INSTALL_HOST: ${EXPOSE_PLUGIN_DEBUGGING_HOST:-localhost}
+      PLUGIN_REMOTE_INSTALL_PORT: ${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}
       PLUGIN_MAX_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
       INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
+      # Proxy configuration
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-}
+      TZ: ${TZ:-}
     depends_on:
       - db
       - redis
     volumes:
       # Mount the storage directory to the container, for storing user files.
-      - dify_app:/app/api/storage
+      - ${DATA_API:-./volumes/app/storage}:/app/api/storage
     networks:
       - ssrf_proxy_network
       - default
@@ -509,8 +452,8 @@ services:
   # worker service
   # The Celery worker for processing the queue.
   worker:
-    image: langgenius/dify-api:1.0.0
-    restart: unless-stopped
+    image: langgenius/dify-api:1.0.1
+    restart: always
     environment:
       # Use the shared environment variables.
       <<: *shared-api-worker-env
@@ -521,20 +464,25 @@ services:
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
       PLUGIN_MAX_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
       INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
+      # Proxy configuration
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-}
+      TZ: ${TZ:-}
     depends_on:
       - db
       - redis
     volumes:
       # Mount the storage directory to the container, for storing user files.
-      - dify_app:/app/api/storage
+      - ${DATA_API:-./volumes/app/storage}:/app/api/storage
     networks:
       - ssrf_proxy_network
       - default
 
   # Frontend web application.
   web:
-    image: langgenius/dify-web:1.0.0
-    restart: unless-stopped
+    image: langgenius/dify-web:1.0.1
+    restart: always
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
       APP_API_URL: ${APP_API_URL:-}
@@ -547,11 +495,12 @@ services:
       TOP_K_MAX_VALUE: ${TOP_K_MAX_VALUE:-}
       INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH: ${INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH:-}
       PM2_INSTANCES: ${PM2_INSTANCES:-2}
+      LOOP_NODE_MAX_COUNT: ${LOOP_NODE_MAX_COUNT:-100}
 
   # The postgres database.
   db:
     image: postgres:15-alpine
-    restart: unless-stopped
+    restart: always
     environment:
       PGUSER: ${PGUSER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-difyai123456}
@@ -564,35 +513,31 @@ services:
                -c 'maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}'
                -c 'effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-4096MB}'
     volumes:
-      - dify_db:/var/lib/postgresql/data
+      - ${DATA_DB:-./volumes/db/data}:/var/lib/postgresql/data
     healthcheck:
       test: [ 'CMD', 'pg_isready' ]
       interval: 1s
       timeout: 3s
       retries: 30
-    networks:
-      - ssrf_proxy_network
 
   # The redis cache.
   redis:
     image: redis:6-alpine
-    restart: unless-stopped
+    restart: always
     environment:
       REDISCLI_AUTH: ${REDIS_PASSWORD:-difyai123456}
     volumes:
       # Mount the redis data directory to the container.
-      - dify_redis:/data
+      - ${DATA_REDIS:-./volumes/redis/data}:/data
     # Set the redis password when startup redis server.
     command: redis-server --requirepass ${REDIS_PASSWORD:-difyai123456}
     healthcheck:
       test: [ 'CMD', 'redis-cli', 'ping' ]
-    networks:
-      - ssrf_proxy_network
 
   # The DifySandbox
   sandbox:
     image: langgenius/dify-sandbox:0.2.10
-    restart: unless-stopped
+    restart: always
     environment:
       # The DifySandbox configurations
       # Make sure you are changing this key for your deployment with a strong key.
@@ -605,17 +550,17 @@ services:
       HTTPS_PROXY: ${SANDBOX_HTTPS_PROXY:-http://ssrf_proxy:3128}
       SANDBOX_PORT: ${SANDBOX_PORT:-8194}
     volumes:
-      - dify_sandbox_deps:/dependencies
-      - dify_sandbox_conf:/conf
+      - ${DATA_SANDBOX:-./volumes/sandbox}/dependencies:/dependencies
+      - ${DATA_SANDBOX:-./volumes/sandbox}/conf:/conf
     healthcheck:
       test: [ 'CMD', 'curl', '-f', 'http://localhost:8194/health' ]
     networks:
       - ssrf_proxy_network
-  
+
   # plugin daemon
   plugin_daemon:
-    image: langgenius/dify-plugin-daemon:0.0.3-local
-    restart: unless-stopped
+    image: langgenius/dify-plugin-daemon:0.0.4-local
+    restart: always
     environment:
       # Use the shared environment variables.
       <<: *shared-api-worker-env
@@ -625,28 +570,35 @@ services:
       MAX_PLUGIN_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
       PPROF_ENABLED: ${PLUGIN_PPROF_ENABLED:-false}
       DIFY_INNER_API_URL: ${PLUGIN_DIFY_INNER_API_URL:-http://api:5001}
-      DIFY_INNER_API_KEY: ${INNER_API_KEY_FOR_PLUGIN:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
-      PLUGIN_REMOTE_INSTALLING_HOST: ${PLUGIN_REMOTE_INSTALL_HOST:-0.0.0.0}
-      PLUGIN_REMOTE_INSTALLING_PORT: ${PLUGIN_REMOTE_INSTALL_PORT:-5003}
+      DIFY_INNER_API_KEY: ${PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
+      PLUGIN_REMOTE_INSTALLING_HOST: ${PLUGIN_DEBUGGING_HOST:-0.0.0.0}
+      PLUGIN_REMOTE_INSTALLING_PORT: ${PLUGIN_DEBUGGING_PORT:-5003}
       PLUGIN_WORKING_PATH: ${PLUGIN_WORKING_PATH:-/app/storage/cwd}
       FORCE_VERIFYING_SIGNATURE: ${FORCE_VERIFYING_SIGNATURE:-true}
+      PYTHON_ENV_INIT_TIMEOUT: ${PLUGIN_PYTHON_ENV_INIT_TIMEOUT:-120}
+      PLUGIN_MAX_EXECUTION_TIMEOUT: ${PLUGIN_MAX_EXECUTION_TIMEOUT:-600}
+      PIP_MIRROR_URL: ${PIP_MIRROR_URL:-}
+      # Proxy configuration
+      # HTTP_PROXY: ${HTTP_PROXY:-}
+      # HTTPS_PROXY: ${HTTPS_PROXY:-}
+      # NO_PROXY: ${NO_PROXY:-}
+      # TZ: ${TZ:-}
     ports:
       - "${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:${PLUGIN_DEBUGGING_PORT:-5003}"
     volumes:
-      - dify_plugin:/app/storage
-    networks:
-      - ssrf_proxy_network
-      - default
+      - ${DATA_PLUGIN_DAEMON:-./volumes/plugin_daemon}:/app/storage
+    depends_on:
+      - db
 
   # ssrf_proxy server
   # for more information, please refer to
   # https://docs.dify.ai/learn-more/faq/install-faq#id-18.-why-is-ssrf_proxy-needed
   ssrf_proxy:
     image: ubuntu/squid:latest
-    restart: unless-stopped
+    restart: always
     volumes:
-      - ./ssrf_proxy/squid.conf.template:/etc/squid/squid.conf.template
-      - ./ssrf_proxy/docker-entrypoint.sh:/docker-entrypoint-mount.sh
+      - ${DATA_SSRF_PROXY:-./volumes/ssrf_proxy}/squid.conf.template:/etc/squid/squid.conf.template
+      - ${DATA_SSRF_PROXY:-./volumes/ssrf_proxy}/docker-entrypoint.sh:/docker-entrypoint-mount.sh
     entrypoint: [ 'sh', '-c', "cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh" ]
     environment:
       # pls clearly modify the squid env vars to fit your network environment.
@@ -659,18 +611,41 @@ services:
       - ssrf_proxy_network
       - default
 
+  # Certbot service
+  # use `docker-compose --profile certbot up` to start the certbot service.
+  certbot:
+    image: certbot/certbot
+    profiles:
+      - certbot
+    volumes:
+      - ${DATA_CERT_BOT:-./volumes/certbot}/conf:/etc/letsencrypt
+      - ${DATA_CERT_BOT:-./volumes/certbot}/www:/var/www/html
+      - ${DATA_CERT_BOT:-./volumes/certbot}/logs:/var/log/letsencrypt
+      - ${DATA_CERT_BOT:-./volumes/certbot}/conf/live:/etc/letsencrypt/live
+      - ${DATA_CERT_BOT:-./volumes/certbot}/update-cert.template.txt:/update-cert.template.txt
+      - ${DATA_CERT_BOT:-./volumes/certbot}/docker-entrypoint.sh:/docker-entrypoint.sh
+    environment:
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+      - CERTBOT_DOMAIN=${CERTBOT_DOMAIN}
+      - CERTBOT_OPTIONS=${CERTBOT_OPTIONS:-}
+    entrypoint: [ '/docker-entrypoint.sh' ]
+    command: [ 'tail', '-f', '/dev/null' ]
+
   # The nginx reverse proxy.
   # used for reverse proxying the API service and Web service.
   nginx:
     image: nginx:latest
-    restart: unless-stopped
+    restart: always
     volumes:
-      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template
-      - ./nginx/proxy.conf.template:/etc/nginx/proxy.conf.template
-      - ./nginx/https.conf.template:/etc/nginx/https.conf.template
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/docker-entrypoint.sh:/docker-entrypoint-mount.sh
-      - ./nginx/ssl:/etc/ssl # cert dir (legacy)
+      - ${DATA_NGINX:-./volumes/nginx}/nginx.conf.template:/etc/nginx/nginx.conf.template
+      - ${DATA_NGINX:-./volumes/nginx}/proxy.conf.template:/etc/nginx/proxy.conf.template
+      - ${DATA_NGINX:-./volumes/nginx}/https.conf.template:/etc/nginx/https.conf.template
+      - ${DATA_NGINX:-./volumes/nginx}/conf.d:/etc/nginx/conf.d
+      - ${DATA_NGINX:-./volumes/nginx}/docker-entrypoint.sh:/docker-entrypoint-mount.sh
+      - ${DATA_NGINX:-./volumes/nginx}/ssl:/etc/ssl # cert dir (legacy)
+      - ${DATA_CERT_BOT:-./volumes/certbot}/conf/live:/etc/letsencrypt/live # cert dir (with certbot container)
+      - ${DATA_CERT_BOT:-./volumes/certbot}/conf:/etc/letsencrypt
+      - ${DATA_CERT_BOT:-./volumes/certbot}/www:/var/www/html
     entrypoint: [ 'sh', '-c', "cp /docker-entrypoint-mount.sh /docker-entrypoint.sh && sed -i 's/\r$$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh && /docker-entrypoint.sh" ]
     environment:
       NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:-_}
@@ -687,6 +662,8 @@ services:
       NGINX_KEEPALIVE_TIMEOUT: ${NGINX_KEEPALIVE_TIMEOUT:-65}
       NGINX_PROXY_READ_TIMEOUT: ${NGINX_PROXY_READ_TIMEOUT:-3600s}
       NGINX_PROXY_SEND_TIMEOUT: ${NGINX_PROXY_SEND_TIMEOUT:-3600s}
+      NGINX_ENABLE_CERTBOT_CHALLENGE: ${NGINX_ENABLE_CERTBOT_CHALLENGE:-false}
+      CERTBOT_DOMAIN: ${CERTBOT_DOMAIN:-}
     depends_on:
       - api
       - web
@@ -700,10 +677,10 @@ services:
     profiles:
       - ''
       - weaviate
-    restart: unless-stopped
+    restart: always
     volumes:
       # Mount the Weaviate data directory to the con tainer.
-      - dify_weaviate:/var/lib/weaviate
+      - ${DATA_WEAVITE:-./volumes/weaviate}:/var/lib/weaviate
     environment:
       # The Weaviate configurations
       # You can refer to the [Weaviate](https://weaviate.io/developers/weaviate/config-refs/env-vars) documentation for more information.
@@ -717,22 +694,16 @@ services:
       AUTHENTICATION_APIKEY_USERS: ${WEAVIATE_AUTHENTICATION_APIKEY_USERS:-hello@dify.ai}
       AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
       AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
-    networks:
-      - ssrf_proxy_network
 
-  # Qdrant vector store.
-  # (if used, you need to set VECTOR_STORE to qdrant in the api & worker service.)
-  qdrant:
-    image: langgenius/qdrant:v1.7.3
+  # unstructured .
+  # (if used, you need to set ETL_TYPE to Unstructured in the api & worker service.)
+  unstructured:
+    image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
     profiles:
-      - qdrant
-    restart: unless-stopped
+      - unstructured
+    restart: always
     volumes:
-      - dify_qdrant:/qdrant/storage
-    environment:
-      QDRANT_API_KEY: ${QDRANT_API_KEY:-difyai123456}
-    networks:
-      - ssrf_proxy_network
+      - ${DATA_UNSTRUCTURED:-./volumes/unstructured}:/app/data
 
 networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.

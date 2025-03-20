@@ -1,20 +1,18 @@
-## README for docker Deployment
+## README for Dify Compose Lite
 
-Welcome to the new `docker` directory for deploying Dify using Docker Compose. This README outlines the updates, deployment instructions, and migration details for existing users.
+Welcome to the lite version for Dify compose deployment
 
-### What's Updated
+### What's Changed
 
-- **Certbot Container**: `docker-compose.yaml` now contains `certbot` for managing SSL certificates. This container automatically renews certificates and ensures secure HTTPS connections.  
-  For more information, refer `docker/certbot/README.md`.
-
-- **Persistent Environment Variables**: Environment variables are now managed through a `.env` file, ensuring that your configurations persist across deployments.
-
-  > What is `.env`? </br> </br>
-  > The `.env` file is a crucial component in Docker and Docker Compose environments, serving as a centralized configuration file where you can define environment variables that are accessible to the containers at runtime. This file simplifies the management of environment settings across different stages of development, testing, and production, providing consistency and ease of configuration to deployments.
-
-- **Unified Vector Database Services**: All vector database services are now managed from a single Docker Compose file `docker-compose.yaml`. You can switch between different vector databases by setting the `VECTOR_STORE` environment variable in your `.env` file.
-- **Mandatory .env File**: A `.env` file is now required to run `docker compose up`. This file is crucial for configuring your deployment and for any custom settings to persist through upgrades.
-- **Legacy Support**: Previous deployment files are now located in the `docker-legacy` directory and will no longer be maintained.
+- Split the Dify data storage path to the .env file for unified configuration.
+- Add network proxy settings.
+- Removed vector database support: QDrant, Milvus, MyScale, CouchBase, PGVector/PGVector-RS, TiDB, Chroma, Oracle, Relyt, OpenSearch, ElasticSearch, OceanBase.
+- Removed middleware support.
+- Adjust API Worker from 1 to 3.
+- Adjust default ETL type to Unstructured.
+- **\[Security\]** Team member invitation validity period reduced from 72 hours to 8 hours.
+- **\[Security\]** Default Web service port changed from 80/443 to 8080/8443.
+- Set the default PIP mirror source for Plugin Daemon to Aliyun.
 
 ### How to Deploy Dify with `docker-compose.yaml`
 
@@ -28,15 +26,6 @@ Welcome to the new `docker` directory for deploying Dify using Docker Compose. T
     - To specify a vector database, set the `VECTOR_STORE` variable in your `.env` file to your desired vector database service, such as `milvus`, `weaviate`, or `opensearch`.
 4. **SSL Certificate Setup**:
     - Rrefer `docker/certbot/README.md` to set up SSL certificates using Certbot.
-
-### How to Deploy Middleware for Developing Dify
-
-1. **Middleware Setup**:
-    - Use the `docker-compose.middleware.yaml` for setting up essential middleware services like databases and caches.
-    - Navigate to the `docker` directory.
-    - Ensure the `middleware.env` file is created by running `cp middleware.env.example middleware.env` (refer to the `middleware.env.example` file).
-2. **Running Middleware Services**:
-    - Execute `docker-compose -f docker-compose.middleware.yaml up --env-file middleware.env -d` to start the middleware services.
 
 ### Migration for Existing Users
 
