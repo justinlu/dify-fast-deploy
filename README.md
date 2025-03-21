@@ -1,51 +1,31 @@
-# Dify Slim-Compose Deployment
+# Dify Customized Deployment
 
 [Click here to learn more about Dify](https://github.com/langgenius/dify)
 
 ## About this repository
 
-This repository is mainly used as personal use, providing additional storage separation and extremely simplified deployment files based on the original Dify Compose file to simplify the deployment operation of Dify.
+This repository is primarily for personal use. Compared to the original Docker Compose, this repository has been significantly streamlined, with some performance parameter adjustments. For users in China, proxy settings and PIP mirror settings are pre-configured.
 
-## About compose version
+## What's Changed?
 
-### docker-origin / Original Configuration
+### Under /original
 
-Original dify compose file, no modification.
+This is the original deployment solution for Dify, unmodified.
 
-### docker-slim / Slim Configuration
+### Under /lite
 
-Extreme simplification based on the original configuration, using the default Weaviate as the vector database for data storage, and significantly simplifying non-essential configuration items and components, only retaining the Weaviate and Qdrant vector database configuration.
+This is the streamlined deployment solution for Dify. Compared to the original version:
 
-Removed configurations in slim version:
+- Split the Dify data storage path to the .env file for unified configuration.
+- Add network proxy settings.
+- Removed vector database support: QDrant, Milvus, MyScale, CouchBase, PGVector/PGVector-RS, TiDB, Chroma, Oracle, Relyt, OpenSearch, ElasticSearch, OceanBase, Opengauss.
+- Removed middleware support.
+- Adjust API Worker from 1 to 3.
+- Adjust default ETL type to Unstructured.
+- **\[Security\]** Team member invitation validity period reduced from 72 hours to 8 hours.
+- **\[Security\]** Default Web service port changed from 80/443 to 8080/8443.
+- Set the default PIP mirror source for Plugin Daemon to Aliyun.
 
-```
-# Infrastructure
-certbot
+## How to Deploy Dify
 
-# Vector databases
-tidb
-couchbase-server
-pgvector
-pgvecto-rs
-chroma
-oceanbase
-oracle
-etcd / minio / milvus-standalone
-opensearch / opensearch-dashboards
-myscale
-elasticsearch / kibana
-
-# ETL type
-unstructured
-```
-
-## Install / Deployment
-
-> Warning: Please be sure to change the `SECRET_KEY` in the `.env` configuration file to ensure the security of your data, and you should never use any key from the public repository!
-
-1. Go to `docker-slim` folder
-2. Rename `.env.example` to `.env`
-3. Modify the `.env` content as needed
-4. If you need to store Dify data in a different path, modify the contents of `volumes` in `docker-compose.yaml` as needed
-5. If you changed the storage path in step 4, copy the volumes folder to the target path as needed
-6. Just start compose
+Refer to `/lite/README.md`.
