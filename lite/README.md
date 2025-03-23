@@ -14,6 +14,10 @@ Welcome to the lite version for Dify compose deployment
 - **\[Security\]** Default Web service port changed from 80/443 to 8080/8443.
 - Set the default PIP mirror source for Plugin Daemon to Aliyun.
 
+About Network Proxy:
+
+In current version(v1.1.0), enable proxy for dify api will cause serious network problem including unable to use embedding/reranker, so network proxy setting is NOT apply to anything by default.
+
 ### How to Deploy Dify with `docker-compose.yaml`
 
 1. **Prerequisites**: Ensure Docker and Docker Compose are installed on your system.
